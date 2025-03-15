@@ -180,19 +180,66 @@ class TrackingNode(Node):
         #################################################
     
     def controller(self):
-        # Instructions: You can implement your own control algorithm here
-        # feel free to modify the code structure, add more parameters, more input variables for the function, etc.
-        
-        ########### Write your code here ###########
-        
-        # TODO: Update the control velocity command
         cmd_vel = Twist()
-        cmd_vel.linear.x = 0
-        cmd_vel.linear.y = 0
-        cmd_vel.angular.z = 0
+
+        # If no goal is detected, stop moving
+        if self.goal_pose is None:
+            cmd_vel.linear.x = 0.0
+            cmd_vel.linear.y = 0.0
+            cmd_vel.angular.z = 0.0
+            return cmd_vel
+
+        # Get the robot’s current obstacle and goal positions
+        try:
+            current_obs_pose, current_goal_pose = self.get_current_poses()
+        except TypeError:
+            # If we can't get current poses, stop moving
+            cmd_vel.linear.x = 0.0
+            cmd_vel.linear.y = 0.0
+            cmd_vel.angular.z = 0.0
+            return cmd_vel
+
+        # Extract goal position
+        goal_x, goal_y = current_goal_pose[:2]
+        obs_x, obs_y = (current_obs_pose[:2] if self.obs_pose is not None else (None, None))
+
+        # Distance to goal
+        distance_to_goal = np.linalg.norm([goal_x, goal_y])
+
+        # Stop if close to goal (0.3m threshold)
+        if distance_to_goal < 0.3:
+            cmd_vel.linear.x = 0.0
+            cmd_vel.linear.y = 0.0
+            cmd_vel.angular.z = 0.0
+            return cmd_vel
+
+        # Compute direction to goal
+        direction_to_goal = np.arctan2(goal_y, goal_x)
+        
+        # If obstacle is detected
+        if self.obs_pose is not None:
+            distance_to_obstacle = np.linalg.norm([obs_x, obs_y])
+            
+            # If obstacle is close (within 0.5m), avoid it
+            if distance_to_obstacle < 0.5:
+                # Decide whether to strafe left or right
+                if obs_y > 0:
+                    strafe_direction = -1  # Move right
+                else:
+                    strafe_direction = 1  # Move left
+                
+                cmd_vel.linear.x = 0.1  # Move slowly forward
+                cmd_vel.linear.y = 0.2 * strafe_direction  # Strafe sideways
+                cmd_vel.angular.z = 0.0
+                return cmd_vel
+
+        # If no obstacle in direct path, move towards goal
+        cmd_vel.linear.x = 0.3  # Move forward
+        cmd_vel.linear.y = 0.0  # No strafing
+        cmd_vel.angular.z = -0.5 * direction_to_goal  # Turn toward the goal smoothly
+
         return cmd_vel
-    
-        ############################################
+
 
 def main(args=None):
     # Initialize the rclpy library

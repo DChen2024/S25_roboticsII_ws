@@ -1,12 +1,13 @@
 # S25_roboticsII
 ROS2 Workspace for S25 RoboticsII
+Contributors: Jainik Mehta, Taha Bekar, Timothy Miles, David Chen
 
 ## Fork the repository
 
 Press the `Fork` on the page and fork the repo to your account. This will create a repository with exact same content in your github account.
 
 ## Cloning the repository 
-On your machine, open a new terminal.
+On your machine, open a new terminal
 ```
 cd ~/codes
 git clone https://github.com/YOUR_ACCOUNT/S25_roboticsII_ws.git [team_name]_ws
@@ -15,7 +16,7 @@ git clone https://github.com/YOUR_ACCOUNT/S25_roboticsII_ws.git [team_name]_ws
 **Please see the instructions in the lab assignment document for full instructions on how to run this code and how to keep the files on the robot updated.** 
 
 ## Building the ROS2 workspace
-The step will build and ROS2 workspace and compile the packages after successfully moving this workspace to the robot.
+The step will build an ROS2 workspace and compile the packages after successfully moving this workspace to the robot.
 
 **Docker**: Open/access a docker container via a terminal (VNC or SSH)
 Run a docker container
@@ -76,7 +77,7 @@ For the new camera model (astra pro plus, Robot 7~). **Unplug and plug** the cam
 ros2 launch tracking_control car_camera_proplus_bringup_launch.py
 ```
 
-## Robot Teleoeration
+## Robot Teleoperation
 At the terminal that run the teleoperation node, the terminal should show this.
 ```
 Control Your Robot!

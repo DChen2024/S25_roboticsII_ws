@@ -54,14 +54,14 @@ def q2R(q):
     return I + 2*q[0]*qhat + 2*qhat2
 ######################
 
-class ColorObjDetectionNode(Node):
+class ColorGoalDetectionNode(Node):
     def __init__(self):
         super().__init__('color_goal_detection_node')
         self.get_logger().info('Color Goal Detection Node Started')
         
         # Declare the parameters for the color detection
-        self.declare_parameter('color_low', [10, 100, 20])
-        self.declare_parameter('color_high', [25, 255, 255])
+        self.declare_parameter('color_low', [1, 1, 1])
+        self.declare_parameter('color_high', [255, 255, 255])
         self.declare_parameter('object_size_min', 1000)
         # Used to convert between ROS and OpenCV images
         self.br = CvBridge()
@@ -95,6 +95,9 @@ class ColorObjDetectionNode(Node):
         
         # color mask
         color_mask = cv2.inRange(hsv_image, param_color_low, param_color_high)
+
+        cv2.imwrite("/S25_roboticsII_ws/color_mask.png",color_mask)
+
         # find largest contour
         contours, _ = cv2.findContours(color_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         if len(contours) > 0:
@@ -145,7 +148,7 @@ def main(args=None):
     # Initialize the rclpy library
     rclpy.init(args=args)
     # Create the node
-    color_obj_detection_node = ColorObjDetectionNode()
+    color_obj_detection_node = ColorGoalDetectionNode()
     # Spin the node so the callback function is called.
     rclpy.spin(color_obj_detection_node)
     # Destroy the node explicitly

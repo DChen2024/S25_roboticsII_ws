@@ -174,31 +174,14 @@ class TrackingNode(Node):
         current_obs_pose, current_goal_pose = self.get_current_poses()
         
         # TODO: get the control velocity command
-        cmd_vel = self.controller()
+        cmd_vel = self.controller(current_goal_pose, current_obs_pose)
         
         # publish the control command
         self.pub_control_cmd.publish(cmd_vel)
         #################################################
     
-    def controller(self):
+    def controller(self, current_goal_pose, current_obs_pose):
         cmd_vel = Twist()
-
-        # If no goal is detected, stop moving
-        if self.goal_pose is None:
-            cmd_vel.linear.x = 0.0
-            cmd_vel.linear.y = 0.0
-            cmd_vel.angular.z = 0.0
-            return cmd_vel
-
-        # Get the robot’s current obstacle and goal positions
-        try:
-            current_obs_pose, current_goal_pose = self.get_current_poses()
-        except TypeError:
-            # If we can't get current poses, stop moving
-            cmd_vel.linear.x = 0.0
-            cmd_vel.linear.y = 0.0
-            cmd_vel.angular.z = 0.0
-            return cmd_vel
 
         # Extract goal position
         goal_x, goal_y = current_goal_pose[:2]
@@ -208,7 +191,7 @@ class TrackingNode(Node):
         distance_to_goal = np.linalg.norm([goal_x, goal_y])
 
         # Stop if close to goal (0.3m threshold)
-        if distance_to_goal < 0.3:
+        if distance_to_goal < 0.2:
             cmd_vel.linear.x = 0.0
             cmd_vel.linear.y = 0.0
             cmd_vel.angular.z = 0.0
@@ -222,7 +205,7 @@ class TrackingNode(Node):
             distance_to_obstacle = np.linalg.norm([obs_x, obs_y])
             
             # If obstacle is close (within 0.5m), avoid it
-            if distance_to_obstacle < 0.5:
+            if distance_to_obstacle < 0.2:
                 # Decide whether to strafe left or right
                 if obs_y > 0:
                     strafe_direction = -1  # Move right
@@ -230,7 +213,7 @@ class TrackingNode(Node):
                     strafe_direction = 1  # Move left
                 
                 cmd_vel.linear.x = 0.1  # Move slowly forward
-                cmd_vel.linear.y = 0.2 * strafe_direction  # Strafe sideways
+                cmd_vel.linear.y = 0.1 * strafe_direction  # Strafe sideways
                 cmd_vel.angular.z = 0.0
                 return cmd_vel
 

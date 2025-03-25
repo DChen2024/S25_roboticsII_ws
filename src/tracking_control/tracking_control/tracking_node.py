@@ -183,6 +183,9 @@ class TrackingNode(Node):
     def controller(self, current_goal_pose, current_obs_pose):
         cmd_vel = Twist()
 
+        # print current_goal_pose, current_obs_pose on terminal
+        self.get_logger().info('Goal Pose: {}'.format(current_goal_pose))
+        self.get_logger().info('Obstacle Pose: {}'.format(current_obs_pose))
         # Extract goal position
         goal_x, goal_y = current_goal_pose[:2]
         obs_x, obs_y = (current_obs_pose[:2] if self.obs_pose is not None else (None, None))

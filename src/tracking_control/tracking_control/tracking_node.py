@@ -86,7 +86,7 @@ class TrackingNode(Node):
         self.timer = self.create_timer(0.01, self.timer_update)
     
     def detected_obs_pose_callback(self, msg):
-        #self.get_logger().info('Received Detected Object Pose')
+        self.get_logger().info('Received Detected Object Pose')
         
         odom_id = self.get_parameter('world_frame_id').get_parameter_value().string_value
         center_points = np.array([msg.pose.position.x, msg.pose.position.y, msg.pose.position.z])
@@ -95,12 +95,12 @@ class TrackingNode(Node):
         # You can decide to filter the detected object pose here
         # For example, you can filter the pose based on the distance from the camera
         # or the height of the object
-        if np.linalg.norm(center_points) > 3 or center_points[2] > 0.7:
+        if center_points[2] > 0.7:
             return
         
         try:
             # Transform the center point from the camera frame to the world frame
-            transform = self.tf_buffer.lookup_transform(odom_id,msg.header.frame_id,rclpy.time.Time(),rclpy.duration.Duration(seconds=0.1))
+            transform = self.tf_buffer.lookup_transform(odom_id,msg.header.frame_id,rclpy.time.Time(),rclpy.duration.Duration(seconds=0.01))
             t_R = q2R(np.array([transform.transform.rotation.w,transform.transform.rotation.x,transform.transform.rotation.y,transform.transform.rotation.z]))
             cp_world = t_R@center_points+np.array([transform.transform.translation.x,transform.transform.translation.y,transform.transform.translation.z])
         except TransformException as e:
@@ -111,7 +111,7 @@ class TrackingNode(Node):
         self.obs_pose = cp_world
 
     def detected_goal_pose_callback(self, msg):
-        #self.get_logger().info('Received Detected Object Pose')
+        self.get_logger().info('Received Detected Object Pose')
         
         odom_id = self.get_parameter('world_frame_id').get_parameter_value().string_value
         center_points = np.array([msg.pose.position.x, msg.pose.position.y, msg.pose.position.z])
@@ -120,12 +120,12 @@ class TrackingNode(Node):
         # You can decide to filter the detected object pose here
         # For example, you can filter the pose based on the distance from the camera
         # or the height of the object
-        if np.linalg.norm(center_points) > 3 or center_points[2] > 0.7:
+        if center_points[2] > 0.7:
             return
         
         try:
             # Transform the center point from the camera frame to the world frame
-            transform = self.tf_buffer.lookup_transform(odom_id,msg.header.frame_id,rclpy.time.Time(),rclpy.duration.Duration(seconds=0.1))
+            transform = self.tf_buffer.lookup_transform(odom_id,msg.header.frame_id,rclpy.time.Time(),rclpy.duration.Duration(seconds=0.01))
             t_R = q2R(np.array([transform.transform.rotation.w,transform.transform.rotation.x,transform.transform.rotation.y,transform.transform.rotation.z]))
             cp_world = t_R@center_points+np.array([transform.transform.translation.x,transform.transform.translation.y,transform.transform.translation.z])
         except TransformException as e:
@@ -166,6 +166,7 @@ class TrackingNode(Node):
         if self.goal_pose is None:
             cmd_vel = Twist()
             cmd_vel.linear.x = 0.0
+            cmd_vel.linear.y = 0.0
             cmd_vel.angular.z = 0.2
             self.pub_control_cmd.publish(cmd_vel)
             return
@@ -194,7 +195,7 @@ class TrackingNode(Node):
         distance_to_goal = np.linalg.norm([goal_x, goal_y])
 
         # Stop if close to goal (0.3m threshold)
-        if distance_to_goal < 0.2:
+        if distance_to_goal < 0.4:
             cmd_vel.linear.x = 0.0
             cmd_vel.linear.y = 0.0
             cmd_vel.angular.z = 0.0
@@ -202,28 +203,28 @@ class TrackingNode(Node):
 
         # Compute direction to goal
         direction_to_goal = np.arctan2(goal_y, goal_x)
-        
+        self.get_logger().info('Direction to Goal: {}'.format(direction_to_goal))
         # If obstacle is detected
         if self.obs_pose is not None:
             distance_to_obstacle = np.linalg.norm([obs_x, obs_y])
             
             # If obstacle is close (within 0.5m), avoid it
-            if distance_to_obstacle < 0.2:
+            if distance_to_obstacle < 0.4:
                 # Decide whether to strafe left or right
                 if obs_y > 0:
                     strafe_direction = -1  # Move right
                 else:
                     strafe_direction = 1  # Move left
                 
-                cmd_vel.linear.x = 0.1  # Move slowly forward
-                cmd_vel.linear.y = 0.1 * strafe_direction  # Strafe sideways
+                cmd_vel.linear.x = 0.0  # Move slowly forward
+                cmd_vel.linear.y = 0.05 * strafe_direction  # Strafe sideways
                 cmd_vel.angular.z = 0.0
                 return cmd_vel
 
         # If no obstacle in direct path, move towards goal
-        cmd_vel.linear.x = 0.3  # Move forward
+        cmd_vel.linear.x = 0.1  # Move forward
         cmd_vel.linear.y = 0.0  # No strafing
-        cmd_vel.angular.z = -0.5 * direction_to_goal  # Turn toward the goal smoothly
+        cmd_vel.angular.z = 0.3 * direction_to_goal  # Turn toward the goal smoothly
 
         return cmd_vel
 
